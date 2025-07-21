@@ -1,0 +1,562 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Square, Volume2, Skull, Zap, Radio, Waves, Settings } from 'lucide-react';
+
+const AlienHorrorSynth = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSound, setCurrentSound] = useState('');
+  const [volume, setVolume] = useState(0.7);
+  const audioContextRef = useRef(null);
+  const masterGainRef = useRef(null);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  const initAudioContext = async () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      masterGainRef.current = audioContextRef.current.createGain();
+      masterGainRef.current.connect(audioContextRef.current.destination);
+    }
+    
+    if (audioContextRef.current.state === 'suspended') {
+      await audioContextRef.current.resume();
+    }
+    
+    masterGainRef.current.gain.value = volume;
+  };
+
+  class SyntheticHorrorGenerator {
+    constructor(audioContext, masterGain) {
+      this.audioContext = audioContext;
+      this.masterGain = masterGain;
+    }
+
+    // DEMONIC VOID DRONE - Deep, unsettling presence
+    generateVoidDrone(duration = 8000) {
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      
+      // Multiple layers of horror
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const osc3 = ctx.createOscillator();
+      const osc4 = ctx.createOscillator();
+      
+      // Chaotic LFOs for disturbing modulation
+      const lfo1 = ctx.createOscillator();
+      const lfo2 = ctx.createOscillator();
+      const lfoGain1 = ctx.createGain();
+      const lfoGain2 = ctx.createGain();
+      
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const distortion = ctx.createWaveShaper();
+      
+      // Extremely low, menacing frequencies
+      osc1.type = 'sawtooth';
+      osc1.frequency.value = 28 + Math.random() * 12;
+      osc2.type = 'triangle';
+      osc2.frequency.value = 41 + Math.random() * 8;
+      osc3.type = 'square';
+      osc3.frequency.value = 19 + Math.random() * 6;
+      osc4.type = 'sawtooth';
+      osc4.frequency.value = 66 + Math.random() * 14;
+      
+      // Disturbing LFO modulation
+      lfo1.type = 'sine';
+      lfo1.frequency.value = 0.03 + Math.random() * 0.04;
+      lfo2.type = 'triangle';
+      lfo2.frequency.value = 0.07 + Math.random() * 0.09;
+      
+      lfoGain1.gain.value = 8 + Math.random() * 12;
+      lfoGain2.gain.value = 15 + Math.random() * 10;
+      
+      // Distortion for synthetic harshness
+      const curve = new Float32Array(2048);
+      for (let i = 0; i < 2048; i++) {
+        const x = (i / 1024) - 1;
+        curve[i] = Math.tanh(x * 3) * 0.7;
+      }
+      distortion.curve = curve;
+      
+      // Dark, oppressive filter
+      filter.type = 'lowpass';
+      filter.frequency.value = 300 + Math.random() * 150;
+      filter.Q.value = 4 + Math.random() * 3;
+      
+      // Slow, menacing envelope
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 2);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + duration / 1000 - 1);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+      
+      // LFO connections
+      lfo1.connect(lfoGain1);
+      lfo2.connect(lfoGain2);
+      lfoGain1.connect(osc1.frequency);
+      lfoGain2.connect(filter.frequency);
+      
+      // Audio routing
+      osc1.connect(distortion);
+      osc2.connect(distortion);
+      osc3.connect(filter);
+      osc4.connect(filter);
+      distortion.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      
+      // Start everything
+      [osc1, osc2, osc3, osc4, lfo1, lfo2].forEach(osc => osc.start());
+      [osc1, osc2, osc3, osc4, lfo1, lfo2].forEach(osc => 
+        osc.stop(ctx.currentTime + duration / 1000)
+      );
+    }
+
+    // NIGHTMARE STATIC - Chaotic digital horror
+    generateNightmareStatic(duration = 3000) {
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      
+      const bufferSize = ctx.sampleRate * (duration / 1000);
+      const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
+      
+      for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < bufferSize; i++) {
+          // Chaotic bit-crushed nightmare
+          let sample = Math.random() * 2 - 1;
+          
+          // Add sudden spikes and drops
+          if (Math.random() < 0.001) sample *= 10;
+          if (Math.random() < 0.002) sample *= 0.1;
+          
+          // Bitcrushing effect
+          sample = Math.floor(sample * 16) / 16;
+          
+          // Add glitchy patterns
+          if (i % 666 === 0) sample *= Math.random() * 3;
+          if (i % 1337 === 0) sample = -sample;
+          
+          data[i] = sample * 0.4;
+        }
+      }
+      
+      const source = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const reverb = ctx.createConvolver();
+      
+      // Create impulse response for creepy reverb
+      const reverbBuffer = ctx.createBuffer(2, ctx.sampleRate * 2, ctx.sampleRate);
+      for (let channel = 0; channel < 2; channel++) {
+        const data = reverbBuffer.getChannelData(channel);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3);
+        }
+      }
+      reverb.buffer = reverbBuffer;
+      
+      filter.type = 'bandpass';
+      filter.frequency.value = 1500 + Math.random() * 2000;
+      filter.Q.value = 8 + Math.random() * 4;
+      
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+      
+      source.buffer = buffer;
+      source.connect(filter);
+      filter.connect(reverb);
+      reverb.connect(gain);
+      gain.connect(this.masterGain);
+      
+      source.start();
+    }
+
+    // SYNTHETIC SCREAM - Disturbing vocal-like sounds
+    generateSyntheticScream() {
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const osc3 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const distortion = ctx.createWaveShaper();
+      
+      // Formant-like frequencies for uncanny valley effect
+      osc1.type = 'sawtooth';
+      osc1.frequency.value = 200;
+      osc2.type = 'triangle';
+      osc2.frequency.value = 800;
+      osc3.type = 'square';
+      osc3.frequency.value = 1200;
+      
+      // Harsh distortion
+      const curve = new Float32Array(2048);
+      for (let i = 0; i < 2048; i++) {
+        const x = (i / 1024) - 1;
+        curve[i] = Math.sign(x) * Math.pow(Math.abs(x), 0.3);
+      }
+      distortion.curve = curve;
+      
+      filter.type = 'bandpass';
+      filter.frequency.value = 1000;
+      filter.Q.value = 10;
+      
+      // Screaming envelope
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
+      
+      // Pitch bending for maximum horror
+      osc1.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
+      osc1.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 1);
+      osc2.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.1);
+      osc2.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 1);
+      
+      osc1.connect(distortion);
+      osc2.connect(distortion);
+      osc3.connect(distortion);
+      distortion.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      
+      [osc1, osc2, osc3].forEach(osc => osc.start());
+      [osc1, osc2, osc3].forEach(osc => osc.stop(ctx.currentTime + 2));
+    }
+
+    // ALIEN TRANSMISSION - Otherworldly communications
+    generateAlienTransmission() {
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      
+      const frequencies = [
+        133.33, 177.77, 266.66, 355.55, 444.44, 533.33, 622.22, 711.11
+      ];
+      
+      frequencies.forEach((freq, index) => {
+        setTimeout(() => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+          const lfo = ctx.createOscillator();
+          const lfoGain = ctx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          
+          // Alien modulation
+          lfo.type = 'triangle';
+          lfo.frequency.value = 13.33 + Math.random() * 6.66;
+          lfoGain.gain.value = freq * 0.1;
+          
+          lfo.connect(lfoGain);
+          lfoGain.connect(osc.frequency);
+          
+          filter.type = 'bandpass';
+          filter.frequency.value = freq * 2;
+          filter.Q.value = 20;
+          
+          gain.gain.setValueAtTime(0, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+          
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          
+          osc.start();
+          lfo.start();
+          osc.stop(ctx.currentTime + 0.4);
+          lfo.stop(ctx.currentTime + 0.4);
+        }, index * 200 + Math.random() * 100);
+      });
+    }
+
+    // CYBER HORROR GLITCH - Digital nightmare
+    generateCyberGlitch() {
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+          
+          osc.type = Math.random() > 0.5 ? 'square' : 'sawtooth';
+          osc.frequency.value = Math.random() * 4000 + 100;
+          
+          filter.type = 'highpass';
+          filter.frequency.value = Math.random() * 2000 + 500;
+          
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+          
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          
+          osc.start();
+          osc.stop(ctx.currentTime + 0.05);
+        }, i * 50 + Math.random() * 50);
+      }
+    }
+
+    // ENTITY PRESENCE - Something is watching
+    generateEntityPresence(duration = 6000) {
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const lfo1 = ctx.createOscillator();
+      const lfo2 = ctx.createOscillator();
+      const lfoGain1 = ctx.createGain();
+      const lfoGain2 = ctx.createGain();
+      
+      osc.type = 'sawtooth';
+      osc.frequency.value = 66.6;
+      
+      // Breathing-like LFO
+      lfo1.type = 'sine';
+      lfo1.frequency.value = 0.13;
+      lfoGain1.gain.value = 0.15;
+      
+      // Sinister tremolo
+      lfo2.type = 'triangle';
+      lfo2.frequency.value = 6.66;
+      lfoGain2.gain.value = 0.1;
+      
+      filter.type = 'lowpass';
+      filter.frequency.value = 200;
+      filter.Q.value = 5;
+      
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 1);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime + duration / 1000 - 1);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+      
+      lfo1.connect(lfoGain1);
+      lfo2.connect(lfoGain2);
+      lfoGain1.connect(gain.gain);
+      lfoGain2.connect(filter.frequency);
+      
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      
+      [osc, lfo1, lfo2].forEach(osc => osc.start());
+      [osc, lfo1, lfo2].forEach(osc => osc.stop(ctx.currentTime + duration / 1000));
+    }
+  }
+
+  const playSound = async (soundType) => {
+    await initAudioContext();
+    const generator = new SyntheticHorrorGenerator(audioContextRef.current, masterGainRef.current);
+    
+    setCurrentSound(soundType);
+    
+    switch (soundType) {
+      case 'void':
+        generator.generateVoidDrone();
+        break;
+      case 'static':
+        generator.generateNightmareStatic();
+        break;
+      case 'scream':
+        generator.generateSyntheticScream();
+        break;
+      case 'transmission':
+        generator.generateAlienTransmission();
+        break;
+      case 'glitch':
+        generator.generateCyberGlitch();
+        break;
+      case 'entity':
+        generator.generateEntityPresence();
+        break;
+    }
+  };
+
+  const startHorrorscape = async () => {
+    await initAudioContext();
+    setIsPlaying(true);
+    
+    const generator = new SyntheticHorrorGenerator(audioContextRef.current, masterGainRef.current);
+    
+    const horrorSequence = () => {
+      const sounds = [
+        () => generator.generateVoidDrone(5000),
+        () => generator.generateNightmareStatic(2000),
+        () => generator.generateEntityPresence(4000),
+        () => generator.generateCyberGlitch(),
+        () => generator.generateAlienTransmission(),
+        () => generator.generateSyntheticScream()
+      ];
+      
+      // Play random sounds at random intervals
+      const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+      randomSound();
+      
+      setTimeout(horrorSequence, Math.random() * 3000 + 1000);
+    };
+    
+    horrorSequence();
+  };
+
+  const stopHorrorscape = () => {
+    setIsPlaying(false);
+    setCurrentSound('');
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
+
+  const updateVolume = (newVolume) => {
+    setVolume(newVolume);
+    if (masterGainRef.current) {
+      masterGainRef.current.gain.value = newVolume;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-green-400 p-8 font-mono">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 text-red-500 animate-pulse">
+            SYNTHETIC HORROR GENERATOR
+          </h1>
+          <p className="text-green-300 text-lg">
+            Alien • Synthetic • Nightmare • Transmission
+          </p>
+        </div>
+        
+        <div className="bg-gray-900 p-6 rounded-lg border border-red-500 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Volume2 className="text-green-400" size={24} />
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={volume}
+                onChange={(e) => updateVolume(parseFloat(e.target.value))}
+                className="w-32 accent-red-500"
+              />
+              <span className="text-sm">{Math.round(volume * 100)}%</span>
+            </div>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={startHorrorscape}
+                disabled={isPlaying}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 px-6 py-3 rounded flex items-center gap-2 transition-colors"
+              >
+                <Play size={20} />
+                INITIATE HORROR
+              </button>
+              
+              <button
+                onClick={stopHorrorscape}
+                className="bg-gray-600 hover:bg-gray-700 px-6 py-3 rounded flex items-center gap-2 transition-colors"
+              >
+                <Square size={20} />
+                TERMINATE
+              </button>
+            </div>
+          </div>
+          
+          {isPlaying && (
+            <div className="text-center">
+              <div className="text-red-400 text-lg animate-pulse">
+                HORROR SEQUENCE ACTIVE
+              </div>
+              <div className="text-green-300 text-sm mt-2">
+                Current: {currentSound || 'Awaiting manifestation...'}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <button
+            onClick={() => playSound('void')}
+            className="bg-purple-900 hover:bg-purple-800 p-6 rounded-lg border border-purple-500 transition-colors group"
+          >
+            <Skull className="mx-auto mb-4 text-purple-400 group-hover:text-purple-300" size={48} />
+            <h3 className="text-xl font-bold mb-2 text-purple-300">VOID DRONE</h3>
+            <p className="text-sm text-purple-200">Deep demonic presence from the abyss</p>
+          </button>
+          
+          <button
+            onClick={() => playSound('static')}
+            className="bg-red-900 hover:bg-red-800 p-6 rounded-lg border border-red-500 transition-colors group"
+          >
+            <Radio className="mx-auto mb-4 text-red-400 group-hover:text-red-300" size={48} />
+            <h3 className="text-xl font-bold mb-2 text-red-300">NIGHTMARE STATIC</h3>
+            <p className="text-sm text-red-200">Chaotic digital horror transmission</p>
+          </button>
+          
+          <button
+            onClick={() => playSound('scream')}
+            className="bg-orange-900 hover:bg-orange-800 p-6 rounded-lg border border-orange-500 transition-colors group"
+          >
+            <Waves className="mx-auto mb-4 text-orange-400 group-hover:text-orange-300" size={48} />
+            <h3 className="text-xl font-bold mb-2 text-orange-300">SYNTHETIC SCREAM</h3>
+            <p className="text-sm text-orange-200">Artificial vocal horror manifestation</p>
+          </button>
+          
+          <button
+            onClick={() => playSound('transmission')}
+            className="bg-cyan-900 hover:bg-cyan-800 p-6 rounded-lg border border-cyan-500 transition-colors group"
+          >
+            <Zap className="mx-auto mb-4 text-cyan-400 group-hover:text-cyan-300" size={48} />
+            <h3 className="text-xl font-bold mb-2 text-cyan-300">ALIEN TRANSMISSION</h3>
+            <p className="text-sm text-cyan-200">Otherworldly communication signals</p>
+          </button>
+          
+          <button
+            onClick={() => playSound('glitch')}
+            className="bg-yellow-900 hover:bg-yellow-800 p-6 rounded-lg border border-yellow-500 transition-colors group"
+          >
+            <Settings className="mx-auto mb-4 text-yellow-400 group-hover:text-yellow-300" size={48} />
+            <h3 className="text-xl font-bold mb-2 text-yellow-300">CYBER GLITCH</h3>
+            <p className="text-sm text-yellow-200">Digital nightmare fragmentation</p>
+          </button>
+          
+          <button
+            onClick={() => playSound('entity')}
+            className="bg-green-900 hover:bg-green-800 p-6 rounded-lg border border-green-500 transition-colors group"
+          >
+            <Skull className="mx-auto mb-4 text-green-400 group-hover:text-green-300" size={48} />
+            <h3 className="text-xl font-bold mb-2 text-green-300">ENTITY PRESENCE</h3>
+            <p className="text-sm text-green-200">Something is watching you</p>
+          </button>
+        </div>
+        
+        <div className="mt-12 text-center text-gray-500 text-sm">
+          <p>⚠️ WARNING: Use headphones for optimal horror experience ⚠️</p>
+          <p className="mt-2">Synthetic horror generated using Web Audio API</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AlienHorrorSynth;
